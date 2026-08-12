@@ -1,0 +1,18 @@
+{
+  "name": "mahoraga",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/server.js",
+    "check": "node --check src/server.js && node --check public/app.js"
+  },
+  "dependencies": {
+    "@gojodev/mahoraga-crawl": "github:gojocodes-all/mahoraga-crawl#main",
+    "axios": "^1.8.4",
+    "cheerio": "^1.0.0",
+    "express": "5.1.0",
+    "helmet": "8.1.0"
+  }
+}
