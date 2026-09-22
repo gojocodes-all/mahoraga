@@ -5,6 +5,20 @@ import * as cheerio from 'cheerio';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { crawlSites, assertPublicUrl, toCsv } from '@gojodev/mahoraga-crawl';
+import {
+  clean,
+  dedupeLeads,
+  digits,
+  generateMessage,
+  norm,
+  normalizeLead,
+  opportunityScore,
+  osmClause,
+  parseIntent,
+  relevanceScore,
+  safeHost,
+  tokenize
+} from './lead-domain.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -101,16 +115,6 @@ async function runLeadJob(job) {
   update(job,`Ready · ${job.leads.length} leads`,100);
 }
 
-function parseIntent(raw) {
-  let q = clean(raw);
-  const wantsNoWebsite = /\b(without|no|lacking)\s+(a\s+)?(standalone\s+)?website(s)?\b|\bwithout\s+(a\s+)?site\b/i.test(q);
-  q=q.replace(/\b(without|no|lacking)\s+(a\s+)?(standalone\s+)?website(s)?\b|\bwithout\s+(a\s+)?site\b/gi,'').trim();
-  const match=q.match(/^(.*?)\s+(?:in|around|near)\s+(.+)$/i);
-  const businessType=clean(match?.[1]||q);
-  const location=clean(match?.[2]||'Lagos, Nigeria');
-  return {raw, businessType, location, wantsNoWebsite, keywords:tokenize(businessType)};
-}
-
 async function discoverOsm(intent, limit) {
   const geo=await geocode(intent.location);
   if(!geo)return[];
@@ -126,20 +130,6 @@ async function geocode(location) {
   const item=r.data?.[0]; if(!item)return null;
   const b=item.boundingbox?.map(Number); if(!b||b.length!==4)return null;
   return {display:item.display_name,bbox:[b[0],b[1],b[2],b[3]]};
-}
-
-function osmClause(type) {
-  const t=type.toLowerCase();
-  if(/school|academy|college|university|education|nursery|montessori/.test(t))return '["amenity"~"^(school|college|university|kindergarten)$"]';
-  if(/real estate|property|realtor|estate agent/.test(t))return '["office"="estate_agent"]';
-  if(/restaurant|cafe|food|eatery|bakery/.test(t))return '["amenity"~"^(restaurant|cafe|fast_food|food_court)$"]';
-  if(/clinic|hospital|medical|doctor|dentist|pharmacy|health/.test(t))return '["amenity"~"^(clinic|hospital|doctors|dentist|pharmacy)$"]';
-  if(/salon|barber|beauty|hair|spa/.test(t))return '["shop"~"^(hairdresser|beauty|massage)$"]';
-  if(/hotel|guest house|hostel|resort/.test(t))return '["tourism"~"^(hotel|guest_house|hostel|resort)$"]';
-  if(/gym|fitness/.test(t))return '["leisure"="fitness_centre"]';
-  if(/computer|electronics/.test(t))return '["shop"~"^(computer|electronics|mobile_phone)$"]';
-  const safe=type.replace(/[^a-zA-Z0-9 ]/g,' ').split(/\s+/).filter(x=>x.length>2).slice(0,3).join('|')||'business';
-  return `["name"~"${safe}",i][~"^(shop|office|amenity|tourism|leisure)$"~"."]`;
 }
 
 function osmToLead(el,intent) {
@@ -245,34 +235,18 @@ async function verifyWebsite(value,lead){
   return{url:origin(r.request?.res?.responseUrl||url),reachable:true,verified,confidence,reason:verified?`Business identity matched the live site (${confidence}% confidence).`:`Site is live, but only weakly matches this business (${confidence}% confidence).`};
 }
 
-function normalizeLead(l){
-  return {id:l.id||hash(`${l.title}|${l.phone}|${l.website}|${l.address}`),title:clean(l.title||l.name||'Unnamed business'),categoryName:clean(l.categoryName||l.category||''),address:clean(l.address||''),city:clean(l.city||''),state:clean(l.state||''),countryCode:clean(l.countryCode||'NG'),phone:clean(l.phone||''),phoneUnformatted:digits(l.phone),email:clean(l.email||l.emails?.[0]||''),website:clean(l.website||''),sourceUrl:clean(l.sourceUrl||l.url||''),description:clean(l.description||''),latitude:l.latitude??null,longitude:l.longitude??null,discoverySource:clean(l.discoverySource||''),rawTags:l.rawTags||null,websiteStatus:l.websiteStatus||'unchecked',websiteConfidence:l.websiteConfidence||0};
-}
-function dedupeLeads(items){const m=new Map();for(const l0 of items){const l=normalizeLead(l0);const key=l.phoneUnformatted?`p:${l.phoneUnformatted}`:l.website?`w:${safeHost(l.website)}`:`n:${norm(l.title)}:${norm(l.city||l.address)}`;if(!m.has(key))m.set(key,l);else m.set(key,merge(m.get(key),l));}return[...m.values()]}
-function merge(a,b){const r={...a};for(const k of ['title','categoryName','address','city','state','countryCode','phone','email','website','sourceUrl','description','discoverySource'])if(clean(b[k]).length>clean(r[k]).length)r[k]=b[k];if(!r.latitude&&b.latitude)r.latitude=b.latitude;if(!r.longitude&&b.longitude)r.longitude=b.longitude;return r}
-function relevanceScore(l,intent){const hay=`${l.title} ${l.categoryName} ${l.description}`.toLowerCase();let s=0;for(const k of intent.keywords)if(hay.includes(k))s+=5;if(l.phone)s+=2;if(l.address||l.city)s+=1;return s||1}
-function opportunityScore(l){let s=35;if(l.phone)s+=28;else s-=15;if(l.websiteStatus==='not_found')s+=28;if(l.websiteStatus==='uncertain')s+=15;if(l.websiteStatus==='verified')s-=18;if(l.address||l.city)s+=5;if(l.email)s+=3;return Math.max(0,Math.min(100,s))}
-function generateMessage(l,intent){const type=clean(l.categoryName||intent.businessType||'business').toLowerCase();const loc=clean(l.city||l.state||intent.location);const angle=businessAngle(type);const site=l.websiteStatus==='verified'?'I also checked your current website and noticed a few opportunities to make the online experience clearer and more conversion-focused.':l.websiteStatus==='not_found'?'I couldn’t find a clear standalone website for the business, so I had an idea that could give customers one reliable place to see what you offer and contact you.':'I had an idea for improving how the business is presented online.';return `Hi 👋\n\nI came across ${l.title}${loc?` in ${loc}`:''}. I’m Gojo from GOJO.DEV, and I build practical websites for businesses.\n\n${site} For a ${type}, a focused site could ${angle}.\n\nWould you be open to me sending a quick idea of what I have in mind? No pressure.`}
-function businessAngle(t){if(/school|education|college|academy/.test(t))return'present admissions, programmes and enquiry information clearly to parents and students';if(/real estate|property|estate/.test(t))return'show available properties and turn interested visitors into inspection enquiries';if(/restaurant|cafe|food/.test(t))return'put menus, location, ordering and customer enquiries in one easy place';if(/clinic|medical|hospital|health|pharmacy/.test(t))return'make services, location and appointment enquiries easier to find';if(/salon|beauty|hair|barber/.test(t))return'show services and work clearly while making bookings easier';if(/hotel|guest|resort/.test(t))return'show rooms, facilities and booking enquiries in a trustworthy mobile-friendly way';return'explain what you offer clearly and turn interested visitors into direct enquiries'}
-
 function cleanSearchTitle(t){return clean(String(t||'').replace(/\s+[|–—-]\s+(Facebook|Instagram|LinkedIn|YouTube|TikTok|X).*$/i,'').replace(/\s+[|–—]\s+.*$/,''))}
 function looksLikeListicle(t){return /\b(top|best|list of|directory|review|guide|near me|businesses in|schools in|companies in)\b/i.test(t)}
 function dedupeSearch(a){const m=new Map();for(const r of a){const k=safeHost(r.url)+norm(r.title);if(!m.has(k))m.set(k,r)}return[...m.values()]}
 function extractPhones(t){return [...new Set((String(t).match(/(?:\+?\d[\d\s().-]{7,}\d)/g)||[]).map(clean).filter(v=>{const d=digits(v);return d.length>=8&&d.length<=15}))]}
 function isBlockedHost(h){h=h.replace(/^www\./,'').toLowerCase();return BLOCKED_SITE_HOSTS.some(x=>h===x||h.endsWith('.'+x))}
-function safeHost(v){try{return new URL(v).hostname.replace(/^www\./,'').toLowerCase()}catch{return''}}
 function origin(v){try{return new URL(v).origin}catch{return''}}
 function update(job,phase,progress){job.phase=phase;job.progress=progress;job.updatedAt=new Date().toISOString()}
 function publicJob(j){return{id:j.id,query:j.query,status:j.status,phase:j.phase,progress:j.progress,createdAt:j.createdAt,updatedAt:j.updatedAt,leads:j.leads,errors:j.errors.slice(-15),meta:j.meta}}
 function enforceRate(ip){const now=Date.now();const recent=(startsByIp.get(ip)||[]).filter(t=>t>now-10*60*1000);if(recent.length>=6){const e=new Error('Too many searches from this connection. Try again later.');e.statusCode=429;throw e}recent.push(now);startsByIp.set(ip,recent)}
-function tokenize(v){return [...new Set(String(v||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(x=>x.length>1&&!['the','and','for','with','private','business','businesses'].includes(x)))]}
-function norm(v){return String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'')}
-function digits(v){return String(v||'').replace(/\D/g,'')}
-function clean(v){return String(v??'').replace(/\s+/g,' ').trim()}
 function cleanError(e){return clean(e?.message||e||'Unknown error').slice(0,500)}
 function clampInt(v,min,max,f){const n=parseInt(v,10);return Number.isFinite(n)?Math.max(min,Math.min(max,n)):f}
 function badRequest(m){const e=new Error(m);e.statusCode=400;return e}
-function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return `lead_${(h>>>0).toString(36)}`}
 function slug(v){return clean(v).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,50)||'leads'}
 async function mapLimit(items,limit,fn){let i=0;const workers=Array.from({length:Math.min(limit,items.length)},async()=>{while(i<items.length){const index=i++;await fn(items[index],index)}});await Promise.all(workers)}
 setInterval(()=>{const cut=Date.now()-2*60*60*1000;for(const[id,j]of jobs)if(new Date(j.updatedAt).getTime()<cut&&!['running','queued'].includes(j.status))jobs.delete(id);for(const[ip,times]of startsByIp){const f=times.filter(t=>t>Date.now()-10*60*1000);f.length?startsByIp.set(ip,f):startsByIp.delete(ip)}},10*60*1000).unref();
