@@ -29,6 +29,13 @@ npm install
 npm start
 ```
 
+## Development
+The pure lead-domain rules are isolated from HTTP and network integrations in `src/lead-domain.js`. Run the syntax checks and deterministic unit tests before opening a pull request:
+
+```bash
+npm run validate
+```
+
 ## Open-source research used
 - Crawlee for bounded crawling.
 - SearXNG's documented HTTP/JSON search API as the preferred configurable metasearch provider.

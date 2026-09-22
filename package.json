@@ -6,7 +6,9 @@
   "engines": { "node": ">=20" },
   "scripts": {
     "start": "node src/server.js",
-    "check": "node --check src/server.js && node --check public/app.js"
+    "check": "node --check src/server.js && node --check src/lead-domain.js && node --check public/app.js && node --check public/network.js && node --check test/lead-domain.test.js",
+    "test": "node --test",
+    "validate": "npm run check && npm test"
   },
   "dependencies": {
     "@gojodev/mahoraga-crawl": "github:gojocodes-all/mahoraga-crawl#main",
