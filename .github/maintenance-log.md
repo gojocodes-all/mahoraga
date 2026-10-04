@@ -1,5 +1,13 @@
 # Maintenance log
 
+## 2026-10-04 — Add reproducible installs and CI validation
+
+- **Rationale:** The repository had deterministic validation scripts but no lockfile or hosted pull-request checks. Dependency resolution could drift between installs, including the Git-based crawler dependency, and regressions could reach `main` without running the test suite.
+- **Files changed:** Added `package-lock.json` and `.github/workflows/ci.yml`; pinned the Git-based crawler dependency in `package.json`; updated `README.md` and this maintenance log.
+- **Validation:** Generated the lockfile with npm; completed a clean `npm ci`; ran `npm run validate` (syntax checks and eight Node test cases); ran `npm audit --audit-level=high`; parsed the workflow YAML; and ran `git diff --check`.
+- **Risk:** Low. Application source and runtime behavior are unchanged. The lockfile pins the dependency graph, and CI uses read-only repository permissions. npm currently reports 13 moderate transitive Crawlee advisories in `stream-json` with no available fix; no high or critical advisories were reported.
+- **Rollback:** Revert this pull request to remove the lockfile and workflow and restore the previous installation guidance.
+
 ## 2026-09-28 — Make lead queue tabs keyboard and screen-reader accessible
 
 - **Rationale:** The Untouched and Touched queue controls looked like tabs but did not expose tab semantics or selected state, and keyboard users could not move between them with standard tab-list navigation keys.
