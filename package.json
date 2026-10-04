@@ -11,7 +11,7 @@
     "validate": "npm run check && npm test"
   },
   "dependencies": {
-    "@gojodev/mahoraga-crawl": "github:gojocodes-all/mahoraga-crawl#main",
+    "@gojodev/mahoraga-crawl": "https://github.com/gojocodes-all/mahoraga-crawl/archive/04526cf5311ccc9311c8d4dfc2ca4aed37e5bae4.tar.gz",
     "axios": "^1.8.4",
     "cheerio": "^1.0.0",
     "express": "5.1.0",

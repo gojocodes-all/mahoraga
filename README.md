@@ -25,7 +25,7 @@ Set `SEARXNG_URL=https://your-searxng.example` to use a SearXNG instance that en
 
 ## Run
 ```bash
-npm install
+npm ci
 npm start
 ```
 
@@ -35,6 +35,12 @@ The pure lead-domain rules are isolated from HTTP and network integrations in `s
 ```bash
 npm run validate
 ```
+
+Pull requests and pushes to `main` run the same validation on Node.js 20 after
+a locked `npm ci` install. CI also fails for high- or critical-severity npm
+advisories. The current Crawlee dependency chain reports moderate advisories in
+`stream-json` with no available fix; review that upstream dependency before
+raising the audit threshold.
 
 ## Open-source research used
 - Crawlee for bounded crawling.
