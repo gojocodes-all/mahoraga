@@ -1,5 +1,13 @@
 # Maintenance log
 
+## 2026-10-08 — Document runtime, data, and deployment contracts
+
+- **Rationale:** The README described the discovery pipeline and a start command but did not explain the Node.js requirement, environment variables, in-memory job lifecycle, browser-local touched state, API routes, operating limits, or the repository's supported single-service and split frontend/backend deployments.
+- **Files changed:** Expanded `README.md`; updated this maintenance log.
+- **Validation:** Cross-checked every documented command, variable, default, route, limit, persistence statement, project path, and deployment step against `package.json`, `src/server.js`, `src/lead-domain.js`, `public/app.js`, `public/network.js`, `vercel.json`, the tests, and CI configuration; verified referenced repository paths; reviewed the complete documentation diff.
+- **Risk:** Low. Documentation only; application code, dependencies, configuration, and runtime behavior are unchanged.
+- **Rollback:** Revert this pull request to restore the shorter README.
+
 ## 2026-10-04 — Add reproducible installs and CI validation
 
 - **Rationale:** The repository had deterministic validation scripts but no lockfile or hosted pull-request checks. Dependency resolution could drift between installs, including the Git-based crawler dependency, and regressions could reach `main` without running the test suite.
