@@ -14,7 +14,7 @@ or persist lead data to a shared database.
    otherwise the server uses a conservative DuckDuckGo HTML fallback.
 5. Uses `@gojodev/mahoraga-crawl` to extract public business and contact data
    from suitable result pages.
-6. searches for each business by name and location, then checks candidate
+6. Searches for each business by name and location, then checks candidate
    standalone domains.
 7. Classifies the result as `verified`, `uncertain`, or `not_found`.
    `not_found` means no credible standalone site was found by the checks; it
