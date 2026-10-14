@@ -198,4 +198,3 @@ Before opening a pull request:
 - The no-key DuckDuckGo fallback was independently implemented after reviewing
   OEvortex/ddg_search (Apache-2.0), which demonstrates the same HTML result
   pattern.
-
