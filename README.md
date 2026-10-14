@@ -143,9 +143,10 @@ includes retry messaging for a sleeping or temporarily unavailable backend.
 
 ```text
 public/                 Static interface, client state, and backend retry logic
-src/server.js           Express API and network discovery orchestration
+src/app.js              Express API and network discovery orchestration
+src/server.js           Process startup and graceful shutdown
 src/lead-domain.js      Pure parsing, normalization, scoring, and message rules
-test/                   Node.js domain and accessibility regression tests
+test/                   Node.js domain, API, and accessibility regression tests
 .github/workflows/ci.yml  Locked install, validation, and dependency audit
 vercel.json             Static build, headers, and API rewrite configuration
 ```
@@ -161,10 +162,12 @@ Run the repository's complete local validation:
 npm run validate
 ```
 
-This syntax-checks the server, domain module, browser scripts, and tests before
-running the Node.js test suite. Pull requests and pushes to `main` run the same
-validation on Node.js 20 after a locked `npm ci` install. CI also fails for
-high- or critical-severity npm advisories.
+This syntax-checks the process entry point, application and domain modules,
+browser scripts, and tests before running the Node.js test suite. The tests
+start the Express application on an ephemeral local port to verify its health
+and JSON error contracts without contacting discovery providers. Pull requests
+and pushes to `main` run the same validation on Node.js 20 after a locked
+`npm ci` install. CI also fails for high- or critical-severity npm advisories.
 
 The current Crawlee dependency chain reports moderate `stream-json`
 advisories with no available fix. Review that upstream dependency before
@@ -173,8 +176,9 @@ raising the audit threshold.
 ## Contributing
 
 Keep domain rules deterministic and testable in `src/lead-domain.js`. Keep
-network access and Express response handling in `src/server.js`. Changes to
-queue semantics or other accessibility contracts should update the focused
+network access and Express response handling in `src/app.js`, and reserve
+`src/server.js` for process lifecycle concerns. Changes to API responses,
+queue semantics, or other accessibility contracts should update the focused
 tests in `test/`.
 
 Before opening a pull request:
@@ -194,3 +198,4 @@ Before opening a pull request:
 - The no-key DuckDuckGo fallback was independently implemented after reviewing
   OEvortex/ddg_search (Apache-2.0), which demonstrates the same HTML result
   pattern.
+

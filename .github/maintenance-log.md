@@ -1,5 +1,13 @@
 # Maintenance log
 
+## 2026-10-14 — Separate the HTTP application from process startup
+
+- **Rationale:** Importing the API implementation immediately opened a network port, which coupled route behavior to process startup and prevented focused HTTP contract tests. Parser failures and unknown API routes also fell through to Express's HTML error responses instead of the JSON contract used by the application.
+- **Files changed:** Moved Express configuration and discovery orchestration to `src/app.js`; reduced `src/server.js` to validated startup and graceful shutdown; added `test/http.test.js`; updated `package.json`, `README.md`, and this maintenance log.
+- **Validation:** `npm run validate` (syntax checks and 12 Node test cases), `npm audit --audit-level=high`, a production entry-point startup/health/shutdown smoke test, and `git diff --check`.
+- **Risk:** Low. Existing successful routes, discovery logic, frontend assets, dependencies, and deployment commands are unchanged. The only response change is that malformed JSON and unknown `/api` routes now return explicit JSON errors.
+- **Rollback:** Revert this pull request to restore the single-file server entry point and Express's default error responses.
+
 ## 2026-10-08 — Document runtime, data, and deployment contracts
 
 - **Rationale:** The README described the discovery pipeline and a start command but did not explain the Node.js requirement, environment variables, in-memory job lifecycle, browser-local touched state, API routes, operating limits, or the repository's supported single-service and split frontend/backend deployments.
@@ -31,3 +39,4 @@
 - **Validation:** `npm run validate` (syntax checks for server, domain, browser scripts, and tests; six Node test cases) and an `npm start` boot smoke test on a non-default port.
 - **Risk:** Low. Existing rule implementations and public API shapes are preserved; the change introduces no runtime dependency or external-service behavior change.
 - **Rollback:** Revert this pull request to restore the domain helpers inside `src/server.js` and remove the test entry points.
+
