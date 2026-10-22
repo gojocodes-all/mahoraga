@@ -46,6 +46,23 @@ test('dedupeLeads merges records with the same phone and keeps richer fields', (
   assert.equal(leads[0].website, 'https://ada.example');
 });
 
+test('relevance scoring rejects unrelated contacts and preserves singular matches', () => {
+  const intent = parseIntent('schools in Ikeja');
+
+  assert.equal(relevanceScore({
+    title: 'Ada Community Pharmacy',
+    categoryName: 'Pharmacy',
+    phone: '0801 234 5678',
+    city: 'Ikeja'
+  }, intent), 0);
+  assert.equal(relevanceScore({
+    title: 'Bright Future Academy',
+    categoryName: 'School',
+    phone: '0801 234 5678',
+    city: 'Ikeja'
+  }, intent), 8);
+});
+
 test('normalization, relevance, and opportunity scoring remain deterministic', () => {
   const lead = normalizeLead({
     title: '  Bright   Future School ',
