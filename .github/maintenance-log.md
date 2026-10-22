@@ -1,5 +1,13 @@
 # Maintenance log
 
+## 2026-10-22 — Enforce lead relevance filtering
+
+- **Rationale:** The discovery pipeline filters candidates with `relevanceScore(...) > 0`, but the scoring function always returned at least one. Businesses with no business-type match could therefore reach verification and the final lead queue merely because they had contact details.
+- **Files changed:** Updated `src/lead-domain.js` to return zero when a query has business keywords and none match the candidate while preserving singular/plural matches; expanded `test/lead-domain.test.js`; updated this maintenance log.
+- **Validation:** Ran `npm ci`, `npm run validate`, `npm audit --audit-level=high`, and `git diff --check`; the focused regression verifies that an unrelated pharmacy is rejected from a school search while a singular `School` category still scores as relevant.
+- **Risk:** Low. The change affects only candidates that do not match any parsed business keyword. Matching leads retain the existing contact and location score bonuses, API shapes remain unchanged, and searches with no usable business keywords keep their prior contact-based scoring.
+- **Rollback:** Revert this pull request to restore the previous minimum relevance score and remove the focused regression.
+
 ## 2026-10-14 — Separate the HTTP application from process startup
 
 - **Rationale:** Importing the API implementation immediately opened a network port, which coupled route behavior to process startup and prevented focused HTTP contract tests. Parser failures and unknown API routes also fell through to Express's HTML error responses instead of the JSON contract used by the application.
