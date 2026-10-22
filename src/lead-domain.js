@@ -62,11 +62,20 @@ export function dedupeLeads(items) {
 
 export function relevanceScore(lead, intent) {
   const searchable = `${lead.title} ${lead.categoryName} ${lead.description}`.toLowerCase();
-  let score = 0;
-  for (const keyword of intent.keywords) if (searchable.includes(keyword)) score += 5;
+  let keywordMatches = 0;
+  for (const keyword of intent.keywords) {
+    const singular = keyword.endsWith('ies') && keyword.length > 4
+      ? `${keyword.slice(0, -3)}y`
+      : keyword.endsWith('s') && !keyword.endsWith('ss') && keyword.length > 3
+        ? keyword.slice(0, -1)
+        : keyword;
+    if (searchable.includes(keyword) || searchable.includes(singular)) keywordMatches += 1;
+  }
+  if (intent.keywords.length && keywordMatches === 0) return 0;
+  let score = keywordMatches * 5;
   if (lead.phone) score += 2;
   if (lead.address || lead.city) score += 1;
-  return score || 1;
+  return score;
 }
 
 export function opportunityScore(lead) {
