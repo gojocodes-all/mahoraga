@@ -1,5 +1,13 @@
 # Maintenance log
 
+## 2026-10-31 — Refresh dependency validation and runtime metadata
+
+- **Rationale:** Newly published advisories affected five locked transitive dependencies, including high-severity findings in `body-parser`, `follow-redirects`, and `undici`. That made the documented `npm audit --audit-level=high` check fail even though patched releases were available within the repository's existing dependency ranges. The README also described a point-in-time advisory set that had become stale and advertised a broader Node.js 20 range than the locked `undici` dependency supports.
+- **Files changed:** Refreshed the affected transitive resolutions in `package-lock.json`; aligned the Node.js engine and README requirement with the locked dependency floor; made the README's audit guidance durable; updated this maintenance log.
+- **Validation:** Ran `npm ci`, `npm run validate`, `npm audit --audit-level=high`, and `git diff --check`; confirmed that direct dependency versions and application source are unchanged.
+- **Risk:** Low. The lockfile moves only transitive dependencies to compatible patch releases allowed by the existing ranges. The metadata now rejects unsupported early Node.js 20 releases; runtime commands, APIs, and application behavior are unchanged.
+- **Rollback:** Revert this pull request to restore the previous transitive resolutions and README wording.
+
 ## 2026-10-22 — Enforce lead relevance filtering
 
 - **Rationale:** The discovery pipeline filters candidates with `relevanceScore(...) > 0`, but the scoring function always returned at least one. Businesses with no business-type match could therefore reach verification and the final lead queue merely because they had contact details.
