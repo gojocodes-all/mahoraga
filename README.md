@@ -28,7 +28,7 @@ filters, message variations, JSON/CSV export, and source links.
 
 ## Requirements
 
-- Node.js 20 or newer
+- Node.js 20.18.1 or newer
 - npm
 - outbound HTTPS access to the configured geocoding, map, search, and public
   website endpoints
@@ -169,9 +169,10 @@ and JSON error contracts without contacting discovery providers. Pull requests
 and pushes to `main` run the same validation on Node.js 20 after a locked
 `npm ci` install. CI also fails for high- or critical-severity npm advisories.
 
-The current Crawlee dependency chain reports moderate `stream-json`
-advisories with no available fix. Review that upstream dependency before
-raising the audit threshold.
+The high-severity audit gate intentionally permits moderate findings. Review
+the complete audit report as well: the Crawlee dependency chain can include
+moderate transitive advisories without an available fix, which should be
+reassessed before raising the threshold.
 
 ## Contributing
 
