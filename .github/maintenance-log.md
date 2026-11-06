@@ -1,5 +1,28 @@
 # Maintenance log
 
+## 2026-11-06 — Keep outreach usable when browser storage fails
+
+- **Rationale:** Reading touched-lead state already tolerated unavailable or
+  malformed browser storage, but saving it did not. A blocked or quota-limited
+  `localStorage` write could throw during the WhatsApp click handler before it
+  finalized the destination URL or scheduled the move to the Touched queue.
+- **Files changed:** `public/app.js` now treats touched-state persistence as a
+  best-effort durability boundary and rejects valid JSON values that are not
+  touched-lead dictionaries; `test/touched-state.test.js` covers malformed
+  stored shapes, failed writes, the WhatsApp handoff, and successful writes;
+  `package.json` includes every browser test in syntax validation; `README.md`
+  documents the session-only fallback; and this log records the change.
+- **Validation:** Ran `npm ci`, `npm run validate`,
+  `npm audit --audit-level=high`, and `git diff --check`; reproduced the failed
+  write path with deterministic browser doubles; and reviewed the complete
+  diff for queue behavior, privacy, security, compatibility, and project scope.
+- **Risk:** Low. The storage key, serialized value, successful persistence,
+  WhatsApp URL, and touched-queue behavior are unchanged. Only invalid stored
+  shapes and storage failures use the fallback, which lasts for the current
+  page session.
+- **Rollback:** Revert this pull request to restore mandatory touched-state
+  writes and remove the focused fallback coverage and documentation.
+
 ## 2026-10-31 — Refresh dependency validation and runtime metadata
 
 - **Rationale:** Newly published advisories affected five locked transitive dependencies, including high-severity findings in `body-parser`, `follow-redirects`, and `undici`. That made the documented `npm audit --audit-level=high` check fail even though patched releases were available within the repository's existing dependency ranges. The README also described a point-in-time advisory set that had become stale and advertised a broader Node.js 20 range than the locked `undici` dependency supports.

@@ -90,7 +90,9 @@ used.
   backend clears them.
 - Completed jobs expire after roughly two hours.
 - Touched-lead state is stored in the current browser's `localStorage`; it is
-  not synchronized between browsers or devices.
+  not synchronized between browsers or devices. If browser storage is blocked
+  or a write fails, the current page session remains usable, but those touched
+  leads reset on reload.
 - A client may start at most six searches in a rolling ten-minute window.
 - Each search accepts 5–40 requested leads; the interface defaults to 20.
 - Exports are available only while the corresponding in-memory job exists.
