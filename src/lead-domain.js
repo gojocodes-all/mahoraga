@@ -50,10 +50,11 @@ export function dedupeLeads(items) {
   const leads = new Map();
   for (const item of items) {
     const lead = normalizeLead(item);
+    const websiteHost = safeHost(lead.website);
     const key = lead.phoneUnformatted
       ? `p:${lead.phoneUnformatted}`
-      : lead.website
-        ? `w:${safeHost(lead.website)}`
+      : websiteHost
+        ? `w:${websiteHost}`
         : `n:${norm(lead.title)}:${norm(lead.city || lead.address)}`;
     leads.set(key, leads.has(key) ? merge(leads.get(key), lead) : lead);
   }

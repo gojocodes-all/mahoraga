@@ -46,6 +46,21 @@ test('dedupeLeads merges records with the same phone and keeps richer fields', (
   assert.equal(leads[0].website, 'https://ada.example');
 });
 
+test('dedupeLeads falls back to business identity for invalid website values', () => {
+  const leads = dedupeLeads([
+    { title: 'Ada Cafe', city: 'Ikeja', website: 'N/A' },
+    { title: 'Bright School', city: 'Surulere', website: 'unknown' }
+  ]);
+  const sameWebsite = dedupeLeads([
+    { title: 'Ada Cafe', website: 'https://ada.example' },
+    { title: 'Ada Cafe Ikeja', website: 'https://ada.example/menu' }
+  ]);
+
+  assert.equal(leads.length, 2);
+  assert.deepEqual(leads.map((lead) => lead.title), ['Ada Cafe', 'Bright School']);
+  assert.equal(sameWebsite.length, 1);
+});
+
 test('relevance scoring rejects unrelated contacts and preserves singular matches', () => {
   const intent = parseIntent('schools in Ikeja');
 
