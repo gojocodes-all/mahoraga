@@ -1,5 +1,26 @@
 # Maintenance log
 
+## 2026-11-14 — Preserve leads with invalid website values
+
+- **Rationale:** Phone-less leads were keyed by website whenever the raw field
+  was non-empty. Invalid placeholders such as `N/A` and `unknown` normalize to
+  an empty hostname, so unrelated businesses could share the `w:` key and be
+  silently merged into one result.
+- **Files changed:** `src/lead-domain.js` now uses the website identity only
+  when URL normalization produces a hostname and otherwise falls back to the
+  existing business-and-location identity; `test/lead-domain.test.js` covers
+  distinct phone-less leads with invalid website values; and this log records
+  the change.
+- **Validation:** Ran `npm ci`, `npm run validate`,
+  `npm audit --audit-level=high`, and `git diff --check`; reproduced the prior
+  data loss with two unrelated leads; and reviewed the complete diff for
+  deduplication precedence, compatibility, security, and project scope.
+- **Risk:** Low. Phone-based identities and valid hostname-based identities are
+  unchanged. Only phone-less records whose website cannot produce a hostname
+  use the existing business-and-location fallback.
+- **Rollback:** Revert this pull request to restore raw website presence as the
+  condition for hostname deduplication and remove the focused regression test.
+
 ## 2026-11-06 — Keep outreach usable when browser storage fails
 
 - **Rationale:** Reading touched-lead state already tolerated unavailable or
